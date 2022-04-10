@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='50' cy='47.2' r='34'%0Afill='transparent' stroke='%23fff' stroke-width='7.5' /%3E%3C/svg%3E"
+      type="image/svg+xml"
+    />
+    <title>web</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        --light: #eee;
+        --dark: #222;
+        --color: var(--dark);
+        --background: var(--light);
+        color: var(--color);
+        background: var(--background)
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body:not(.light) {
+          --color: var(--light);
+          --background: var(--dark);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main></main>
+    <script type="module">const fetchAudioBuffer = async (ctx, url)=>{
+    const res = await fetch(url);
+    const arrayBuffer = await res.arrayBuffer();
+    return await ctx.decodeAudioData(arrayBuffer);
+};
+
+const kebab = (s)=>s.replace(/[a-z](?=[A-Z])|[A-Z]+(?=[A-Z][a-z])/g, '$&-').toLowerCase()
+;
+const toCssText = (style)=>{
+    let css = '';
+    for(const key in style)css += kebab(key) + ':' + style[key] + ';';
+    return css;
+};
+const createProp = (el, _type, name, value, attrs)=>{
+    switch(name){
+        case 'children':
+        case 'ref':
+            return;
+        case 'style':
+            value = value?.valueOf();
+            if (typeof value === 'object') value = toCssText(value);
+            el.setAttribute('style', value);
+            attrs.style = el.getAttributeNode('style');
+            return;
+    }
+    const attr = name
+    ;
+    value = value?.valueOf();
+    switch(typeof value){
+        case 'string':
+        case 'number':
+            if (!(name in el)) {
+                el.setAttribute(attr, value);
+                attrs[attr] = el.getAttributeNode(attr);
+                return;
+            }
+            break;
+        case 'function':
+            el.setAttribute(attr, '');
+            attrs[attr] = el.getAttributeNode(attr)
+            ;
+            el[name] = value;
+            return;
+    }
+    el[name] = value;
+    if (el.hasAttribute(attr)) attrs[attr] = el.getAttributeNode(attr);
+};
+const propCache = new WeakMap();
+const createProps = (el, type, props = {}, attrs = {}, cacheRef = el)=>{
+    for(const name in props)createProp(el, type, name, props[name], attrs);
+    propCache.set(cacheRef, {
+        props,
+        attrs
+    });
+};
+const updateProps = (el, type, next = {}, cacheRef = el)=>{
+    if (!propCache.has(cacheRef)) return next && createProps(el, type, next, void 0, cacheRef);
+    const c = propCache.get(cacheRef);
+    const { attrs , props  } = c;
+    if (!next) {
+        for(const name in attrs)el.removeAttributeNode(attrs[name]);
+        for(const name3 in props)delete el[name3];
+        propCache.delete(cacheRef);
+        return;
+    }
+    let value;
+    out: for(const name in props){
+        if (!(name in next)) {
+            delete el[name];
+            continue;
+        }
+        value = next[name];
+        switch(name){
+            case 'children':
+            case 'ref':
+                continue out;
+            case 'value':
+                value = value?.valueOf();
+                el[name] !== value && document.activeElement !== el && (el[name] = value);
+                continue out;
+        }
+        value = value?.valueOf()
+        ;
+        el[name] = value;
+    }
+    for(const name1 in attrs){
+        if (!(name1 in next) || next[name1] === false || next[name1] == null) {
+            el.removeAttributeNode(attrs[name1]);
+            delete attrs[name1];
+            continue;
+        }
+        value = next[name1]?.valueOf();
+        switch(name1){
+            case 'style':
+                if (typeof value === 'object') value = toCssText(value);
+                break;
+        }
+        if (props[name1] !== value && typeof value !== 'function') attrs[name1].value = value;
+    }
+    for(const name2 in next){
+        if (!(name2 in attrs) && !(name2 in props)) createProp(el, type, name2, next[name2], attrs);
+    }
+    c.props = next;
+};
+
+const anchor = new Comment();
+const Fragment = Symbol();
+const jsx$1 = (kind, props, key)=>kind === Fragment ? props.children : {
+        kind,
+        props,
+        key
+    }
+;
+let hook;
+const createHook = ()=>function current(fn = current.fn) {
+        const prev = hook;
+        hook = current;
+        hook.fn = fn;
+        fn();
+        hook = prev;
+    }
+;
+let Chunk = class Chunk extends Array {
+    firstChild;
+    dom = [];
+    get last() {
+        return this.dom.at(-1);
+    }
+    get nextSibling() {
+        return this.last?.nextSibling;
+    }
+    insertBefore(x) {
+        this.unshift(x);
+    }
+    appendChild(x) {
+        this.push(x);
+    }
+    after(x) {
+        this.last?.after(x);
+    }
+    save() {
+        this.dom = [
+            ...this
+        ];
+    }
+    remove() {
+        this.dom.forEach((el)=>el.remove()
+        );
+        this.splice(0);
+    }
+    removeChild(x) {
+        let i = this.indexOf(x);
+        ~i && this.splice(i, 1);
+        i = this.dom.indexOf(x);
+        ~i && this.dom.splice(i, 1);
+    }
+};
+const { TEXT_NODE , COMMENT_NODE  } = document;
+const html = document.createElement.bind(document);
+const svg = document.createElementNS.bind(document, 'http://www.w3.org/2000/svg');
+const forceArray = (x, withNull)=>Array.isArray(x) ? x : x == null && !withNull ? [] : [
+        x
+    ]
+;
+const flatDom = (arr, res = [])=>{
+    for (const el of arr){
+        if (el.dom) res.push(...flatDom(el.dom));
+        else res.push(el);
+    }
+    return res;
+};
+const prevs = new WeakMap();
+const render = (n, el, doc = html, withNull = false)=>reconcile(el, forceArray(n, withNull), prevs.get(el), doc)
+;
+const reconcile = (parent, nk, pk, doc)=>{
+    if (pk?.running) {
+        console.warn('attempt to reconcile lane which is reconciling');
+        return;
+    }
+    if (pk === nk) nk = [
+        ...nk
+    ];
+    prevs.set(parent, nk);
+    nk.running = true;
+    nk.dom = Array(nk.length);
+    nk.keyed = new Map();
+    nk.mapped = new Map();
+    if (Array.isArray(pk)) {
+        const keep = new Set();
+        for(let i = 0, n, el, p, pel, k, pi; i < nk.length; i++){
+            n = nk[pi = i];
+            k = n?.key;
+            if (k != null) {
+                nk.keyed.set(k, i);
+                pi = pk.keyed.get(k) ?? -1;
+            }
+            p = pk[pi];
+            pel = pk.dom[pi];
+            nk.dom[i] = el = create$1(doc, n, p, pel);
+            if (el === pel) keep.add(pel);
+        }
+        for (const pel1 of pk.dom){
+            if (!keep.has(pel1)) {
+                if (parent instanceof Chunk) parent.removeChild(pel1);
+                pel1.remove();
+                pk.mapped.get(pel1)?.hook?.onremove?.();
+            }
+        }
+    } else {
+        for(let i = 0, n, el, k; i < nk.length; i++){
+            n = nk[i];
+            k = n?.key;
+            if (k != null) nk.keyed.set(k, i);
+            nk.dom[i] = el = create$1(doc, n);
+            nk.mapped.set(el, n);
+        }
+    }
+    nk.flatDom = flatDom(nk.dom);
+    if (pk?.flatDom) diff(parent, nk.flatDom, pk.flatDom);
+    else nk.flatDom.forEach((el)=>parent.appendChild(el)
+    );
+    nk.running = false;
+};
+const diff = (parent, n, p, i = 0, len = n.length, el, last)=>{
+    for(; i < len; i++){
+        el = n[i];
+        if (p[i] === el) last = el;
+        else if (!i) parent.insertBefore(last = el, parent.firstChild);
+        else last.after(last = el);
+    }
+};
+const create$1 = (doc, n, p, pel)=>{
+    let el;
+    switch(typeof n){
+        case 'string':
+        case 'number':
+            if (pel?.nodeType === TEXT_NODE) {
+                if (p != n) pel.nodeValue = n;
+                return pel;
+            }
+            el = new Text(n);
+            return el;
+        case 'object':
+            if (!n) break;
+            if (Array.isArray(n)) {
+                if (pel && Array.isArray(p)) el = pel;
+                else el = new Chunk();
+                reconcile(el, n, p, doc);
+                el.save();
+            } else if (typeof n.kind === 'string') {
+                if (n.props.ref?.current && n.props.ref.current.tagName.toLowerCase() === n.kind && (el = n.props.ref.current) ||
+                pel && p.kind === n.kind && (el = pel)) {
+                    updateProps(el, n.kind, n.props);
+                } else {
+                    if (n.kind === 'svg') doc = svg;
+                    el = doc(n.kind, 'is' in n.props ? {
+                        is: n.props.is
+                    } : void 0);
+                    if (n.kind === 'foreignObject') doc = html;
+                    createProps(el, n.kind, n.props);
+                }
+                render(n.props.children, el, doc);
+                if ('ref' in n.props && el !== n.props.ref.current) queueMicrotask(()=>n.props.ref.current = el
+                );
+            } else {
+                let initial = true;
+                if (!((el = pel) && (n.hook = p.hook))) {
+                    el = new Chunk();
+                    n.hook = createHook();
+                }
+                n.hook(()=>{
+                    let next;
+                    if (!initial && !(next = el.nextSibling)) el.after(next = anchor);
+                    render(n.kind(n.props), el, doc, true);
+                    el.save();
+                    if (!initial && next) {
+                        for (const e of flatDom(el))next.before(e);
+                        next === anchor && next.remove();
+                    } else {
+                        initial = false;
+                    }
+                });
+            }
+            return el;
+    }
+    if (pel?.nodeType === COMMENT_NODE) return pel;
+    el = new Comment();
+    return el;
+};
+
+const FluentFlags = (cb, flags = {})=>new Proxy(cb, {
+        get (_, prop, receiver) {
+            flags[prop] = true;
+            return receiver;
+        },
+        apply (_, self, args) {
+            const f = {
+                ...flags
+            };
+            flags = {}
+            ;
+            return cb.call(self, f).apply(self, args);
+        }
+    })
+;
+
+const event = ()=>FluentFlags((flags)=>(fn = ()=>{})=>function(event1) {
+                if (flags.prevent) event1.preventDefault();
+                if (flags.stop) flags.immediate ? event1.stopImmediatePropagation() : event1.stopPropagation();
+                return fn.call(this, event1);
+            }
+    )
+;
+
+function onEvent(el, type, listener, options) {
+    el.addEventListener(type, listener, options);
+    return ()=>off(el, type, listener, options)
+    ;
+}
+ const on = ()=>FluentFlags((flags)=>(el, type, fn, options = {})=>onEvent(el, type, fn, {
+                ...flags.active ? {
+                    passive: false
+                } : null,
+                ...flags,
+                ...options
+            })
+    )
+;
+ const off = (el, type, listener, options)=>el.removeEventListener(type, listener, options)
+;
+
+const accessors = (target, source, fn)=>Object.defineProperties(target, Object.fromEntries(Object.entries(source).map(([key, value])=>{
+        const next = fn(key, value);
+        const prev = Object.getOwnPropertyDescriptor(target, key);
+        if (prev && prev.get && prev.set) {
+            const { get , set  } = next;
+            next.get = ()=>prev.get?.() ?? get()
+            ;
+            next.set = (v)=>{
+                prev.set?.(v);
+                set(prev.get?.() ?? v);
+            };
+        }
+        return [
+            key,
+            {
+                configurable: true,
+                enumerable: true,
+                ...next
+            }
+        ];
+    })))
+;
+
+const Types = new Map([
+    [
+        String,
+        (x)=>x.toString()
+    ],
+    [
+        Number,
+        (x)=>parseFloat(x)
+    ],
+    [
+        Boolean,
+        (x)=>x = x === false ? false : x != null
+    ],
+]);
+const applyProps = (self, data)=>{
+    for (const [key1, value1] of Object.entries(data))if ([
+        String,
+        Number,
+        Boolean
+    ].includes(value1)) data[key1] = void 0;
+    accessors(self, data, (key)=>{
+        const attr = key.toLowerCase();
+        return {
+            get: ()=>data[key]
+            ,
+            set (value) {
+                self.setAttribute(attr, value);
+            }
+        };
+    });
+    return data;
+};
+const attrs = (attrs1)=>(superclass)=>{
+        const types = new Map();
+        const map = new Map();
+        for (const [key2, value] of Object.entries(new attrs1())){
+            const type = value == null ? Types.get(String) : Types.get(value) ?? Types.get(value?.constructor);
+            if (!type) {
+                throw new TypeError(`Attribute "${key2}" is not valid type, must be either: String, Number, Boolean, null, undefined`);
+            }
+            types.set(key2, type);
+            map.set(key2.toLowerCase(), key2);
+        }
+        const observedAttributes = [
+            ...map.keys()
+        ];
+        return class extends superclass {
+            static get observedAttributes() {
+                return observedAttributes.concat(super.observedAttributes ?? []);
+            }
+            #data;
+            constructor(...args){
+                super(...args);
+                this.#data = applyProps(this, new attrs1());
+            }
+            attributeChangedCallback(name, oldValue, newValue) {
+                let key;
+                if (key = map.get(name)) {
+                    const prev = this.#data[key];
+                    const next = types.get(key)(newValue);
+                    if (!Object.is(prev, next)) {
+                        this.#data[key] = next;
+                        this.propertyChangedCallback?.(key, prev, next);
+                    }
+                }
+                super.attributeChangedCallback?.(name, oldValue, newValue);
+            }
+        };
+    }
+;
+
+const Listener = (body)=>new Function('event', `with(this){let fn=${body};return typeof fn=='function'?fn.call(this,event):fn}`)
+;
+const events = ()=>(superclass)=>superclass.prototype.dispatch
+         ? superclass : class extends superclass {
+            dispatchEvent(event) {
+                const onEvent = `on${event.type}`;
+                let fn = this[onEvent];
+                if (!fn) fn = Listener(this.getAttribute(onEvent));
+                const pass = fn.call(this, event);
+                if (pass !== false) super.dispatchEvent(event);
+                return pass;
+            }
+            dispatch(name, detail, init) {
+                return this.dispatchEvent(new CustomEvent(name, {
+                    detail,
+                    ...init
+                }));
+            }
+        }
+;
+
+const lifecycle = ()=>(superclass)=>class extends mixter(superclass, events()) {
+            isMounted = false;
+            connectedCallback() {
+                super.connectedCallback?.();
+                if (!this.isMounted) {
+                    this.isMounted = true;
+                    this.dispatch('mounted');
+                }
+            }
+            disconnectedCallback() {
+                super.disconnectedCallback?.();
+                queueMicrotask(()=>{
+                    if (!this.isConnected) {
+                        this.isMounted = false;
+                        this.dispatch('unmounted');
+                    }
+                });
+            }
+        }
+;
+
+const props = (props1)=>(superclass)=>class extends superclass {
+            constructor(...args){
+                super(...args);
+                Object.assign(this, new props1());
+            }
+        }
+;
+
+const shadow = (init = '', html = '')=>(superclass)=>class extends superclass {
+            root = (()=>{
+                const root = this.attachShadow(typeof init === 'object' ? init : {
+                    mode: 'open'
+                });
+                root.innerHTML = typeof init === 'string' ? init : html;
+                return root;
+            })();
+        }
+;
+
+const argsOf = (x1)=>{
+    const d = x1.indexOf('{') + 1;
+    if (!d || x1.slice(0, d).includes(')')) return [];
+    x1 = x1.slice(d);
+    let match;
+    do {
+        match = false;
+        x1 = x1.replace(/`((\\`)?[^`])+?`|'((\\')?[^'])+?'|"((\\")?[^"])+?"|\([^{[(]*?\)|\{[^{[(]*?\}|\[[^{[(]*?\]/g, ()=>{
+            match = true;
+            return '';
+        });
+    }while (match)
+    return x1.split('}')[0].split(',').map((x)=>x.split(/[^\w\s$]+/g)[0].trim()
+    );
+};
+ const argtor = (fn, keys = new Set())=>(argsOf('' + fn).forEach((x)=>!x || keys.add(x)
+    ), keys)
+;
+
+const create = (target)=>{
+    const NO_DEPS = Symbol();
+    const REDUCER = Symbol();
+    const entries = Object.entries(target);
+    const mem = Object.fromEntries(entries);
+    const register = (f)=>{
+        f.keys = argtor(f.fn);
+        f.keys.forEach((key)=>effects.get(key).push(f)
+        );
+        !f.keys.size && effects.get(NO_DEPS).push(f);
+        f.values = {};
+        return run(f);
+    };
+    const update = (f)=>{
+        f.pass = !f.keys.size;
+        for (const key of f.keys){
+            const value = target[key];
+            if (value == null) {
+                f.pass = false;
+                return;
+            }
+            if (!Object.is(f.values[key], value)) {
+                f.values[key] = value;
+                f.pass = true;
+            }
+        }
+    };
+    const run = (f)=>{
+        update(f);
+        f.dispose?.();
+        if (!f.pass) return;
+        const result = f.fn(f.values);
+        if (f.cb?.(result) === false) return;
+        if (f.target != null) target[f.target] = result;
+        else {
+            if (typeof result === 'function') {
+                f.dispose = ()=>{
+                    result();
+                    f.dispose = null;
+                };
+            }
+        }
+    };
+    const context = {
+        $: {}
+    };
+    const $ = context.$;
+    $.$ = $;
+    accessors(context.$, target, (key)=>({
+            get: ()=>mem[key]
+            ,
+            set (v) {
+                if (v === REDUCER) {
+                    v = reducer.initial;
+                    reducer.target = key;
+                    register(reducer);
+                    if (v == null) return;
+                }
+                target[key] = v;
+            }
+        })
+    );
+    accessors(target, target, (key)=>({
+            get: ()=>mem[key]
+            ,
+            set (v) {
+                if (!Object.is(mem[key], v)) {
+                    mem[key] = v;
+                    effects.get(key).forEach(run);
+                }
+            }
+        })
+    );
+    let reducer;
+    $.reduce = (fn, initial)=>{
+        reducer = {
+            fn,
+            initial
+        };
+        return REDUCER;
+    };
+    $.effect = (fn, cb)=>register({
+            fn,
+            cb
+        })
+    ;
+    let effects;
+    $.cleanup = ()=>{
+        if (effects) {
+            for (const fns of effects.values())fns.forEach((f)=>f.dispose?.()
+            );
+        }
+        effects = new Map([
+            [
+                NO_DEPS,
+                []
+            ],
+            ...entries.map(([key])=>[
+                    key,
+                    []
+                ]
+            ),
+        ]);
+    };
+    $.cleanup();
+    return $;
+};
+const state = (fn)=>(superclass)=>class extends mixter(superclass, lifecycle()) {
+            host = this;
+            constructor(...args){
+                super(...args);
+                const context = create(this);
+                on()(this, 'mounted', ()=>fn.call(this, context)
+                );
+                on()(this, 'unmounted', context.cleanup);
+            }
+        }
+;
+
+function mixter(a, ...mixins) {
+    return mixins.reduce((c, mixin)=>mixin(c)
+    , a);
+}
+
+const Registry = new WeakMap();
+const fromElement = (Element, options = {})=>{
+    let fn = Registry.get(Element);
+    if (fn) return fn;
+    const tag = 'x-' + Element.name.toLowerCase() + (Math.random() * 10000000 | 0).toString(36);
+    const ctor = class extends Element {
+    };
+    customElements.define(tag, ctor, options);
+    if (options.extends) fn = (props)=>jsx$1(options.extends, Object.assign(props, {
+            is: tag
+        }), void 0)
+    ;
+    else fn = (props)=>jsx$1(tag, props, void 0)
+    ;
+    Registry.set(Element, fn);
+    fn.toString = ()=>tag
+    ;
+    return fn;
+};
+
+const renderer = (render)=>($)=>({
+            render (fn) {
+                $.effect(fn, (result)=>{
+                    render(result, $.root);
+                    return false;
+                });
+            }
+        })
+;
+
+const jsx = ($)=>({
+        ...renderer(render)($),
+        part (fn, output) {
+            let update;
+            const Fn = ()=>{
+                update = hook;
+                return output;
+            };
+            $.effect(fn, (value)=>{
+                output = value;
+                update?.();
+                return false;
+            });
+            return Fn;
+        }
+    })
+;
+
+const MAX_ZOOM = 100000;
+const style =  `
+:host {
+  display: inline-flex;
+  outline: none;
+  user-select: none;
+  touch-action: none;
+}
+
+:host([autoresize]) {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+:host([autoresize]) canvas {
+  width: 100% !important;
+  height: 100% !important;
+}`;
+ class PlotElement extends mixter(HTMLElement, shadow(`<style>${style}</style><canvas></canvas>`), attrs(class {
+    width = 200;
+    height = 60;
+    lineWidth = 1;
+    pixelRatio = window.devicePixelRatio;
+    background = '#235';
+    color = '#4f4';
+     autoResize = false;
+     zoom = 1;
+     offsetX = 0;
+}), props(class {
+     data;
+     screen;
+     onPointerMove;
+     onWheel;
+     get;
+ pointerDown = false;
+ pointer = {
+        id: -1,
+        x: 0,
+        y: 0
+    };
+}), state(function({ $ , effect , reduce  }) {
+    if (this.tabIndex === -1) this.tabIndex = 0;
+    $.screen = reduce(({ root  })=>{
+        const canvas = root.querySelector('canvas');
+        const ctx = canvas.getContext('2d', {
+            alpha: false,
+            desynchronized: true
+        });
+        return {
+            canvas,
+            ctx
+        };
+    });
+    $.get = reduce(({ data  })=>(i)=>data[i | 0] ?? data[data.length - 1]
+    );
+    effect(({ zoom  })=>{
+        $.zoom = Math.max(1, Math.min(MAX_ZOOM, zoom));
+    });
+    effect(({ screen: { canvas  } , width , height , pixelRatio  })=>{
+        canvas.width = width * pixelRatio;
+        canvas.height = height * pixelRatio;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+    });
+    effect(({ screen: { ctx  } , lineWidth , pixelRatio , color  })=>{
+        ctx.lineWidth = lineWidth * pixelRatio;
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = color;
+    });
+    effect(({ background , get , screen: { canvas , ctx  } , width: w , height , pixelRatio: p , offsetX: ox , zoom , data  })=>{
+        ctx.fillStyle = background;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(0, canvas.height / 2, canvas.width, canvas.height / 2);
+        ox /= 100;
+        w *= p;
+        height *= p;
+        const l = ctx.lineWidth;
+        const hl = l * 0.5;
+        const hw = w * 0.5 + hl;
+        const h = height - l;
+        const step = Math.max(0.00001,
+        (zoom * 2) / Math.max(1, data.length - 1));
+        if (!isFinite(step)) return;
+        const sx = 1 / w;
+        const cf = data.length / (w * zoom * 2);
+        const ds = cf * w * 2;
+        let i = (data.length - ds) / cf * ox;
+        let cx = 0;
+        let cy = 0;
+        let x = -1;
+        const calc = (y)=>{
+            cx = (x + 1) * hw - hl;
+            cy = (1 - (y + 1) * 0.5) * h + hl;
+        };
+        calc(get(0));
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        for(x = -1; x <= 1; x += sx){
+            calc(get((i++) * cf));
+            ctx.lineTo(cx, cy);
+        }
+        calc(get((i++) * cf));
+        ctx.lineTo(cx, cy);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+    });
+    $.onPointerMove = reduce(({ offsetX , pointer , zoom , pixelRatio  })=>(e)=>{
+            if (e.pointerId !== pointer.id) return;
+            const x = e.pageX;
+            const y = e.pageY;
+            $.offsetX = Math.min(100, Math.max(0, offsetX + (pointer.x - x) / zoom / pixelRatio));
+            const d = pointer.y - y;
+            $.zoom = zoom - Math.min(50, zoom ** 1.5) * 0.015 * d;
+            $.pointer = {
+                id: e.pointerId,
+                x,
+                y
+            };
+        }
+    );
+    $.onWheel = reduce(({ zoom  })=>(e)=>{
+            $.zoom = zoom - Math.min(50, zoom ** 1.15) * 0.0006 * e.deltaY;
+        }
+    );
+    const onPointerDown = (e)=>{
+        $.pointer = {
+            id: e.pointerId,
+            x: e.pageX,
+            y: e.pageY
+        };
+        $.pointerDown = true;
+    };
+    effect(({ pointerDown , onPointerMove  })=>{
+        if (!pointerDown) return;
+        const off = on()(window, 'pointermove', event().prevent.stop(onPointerMove));
+        const offOnce = on().once(window, 'pointerup', ()=>{
+            $.pointerDown = false;
+        });
+        return ()=>{
+            off();
+            offOnce();
+        };
+    });
+    effect(({ onWheel  })=>{
+        const offPointerDown = on()(this, 'pointerdown', onPointerDown);
+        const offWheel = on().active(this, 'wheel', onWheel);
+        return ()=>{
+            offPointerDown();
+            offWheel();
+        };
+    });
+})) {
+}
+
+// based on https://github.com/fenomas/webaudio-viz/blob/master/src/index.js
+class Stabilizer {
+    // overly magical ad-hoc routine to choose where to start drawing data
+    numOffsets = 10;
+    offsetsSpan = 320;
+    offsets = Array.from({ length: this.numOffsets }).map((_, i) => ((this.offsetsSpan / this.numOffsets) * ((i / this.numOffsets) ** 1.3) * this.numOffsets) | 0);
+    prev = Array(this.numOffsets).fill(0);
+    points = Array(this.numOffsets).fill(0);
+    findStartingPoint(data) {
+        let count = 0;
+        let p = 0;
+        while (count < this.numOffsets && p >= 0) {
+            p = this.findUpwardsZeroCrossing(data, p, data.length / 2);
+            if (p > 0)
+                this.points[count++] = p;
+        }
+        if (count < 2)
+            return this.points[0] || 0;
+        // try to find a starting point similar to the previous one
+        p = 0;
+        let bestScore = 999999.9;
+        for (let i = 0, np = 0; i < count; i++) {
+            np = this.points[i];
+            const score = this.scorePoint(np, data);
+            if (score > bestScore)
+                continue;
+            bestScore = score; // * 0.95 - 1
+            p = np;
+        }
+        for (let i = 0; i < this.numOffsets; i++)
+            this.prev[i] = data[this.offsets[i] + p];
+        return p + -(p > 1);
+    }
+    scorePoint(pt, data) {
+        let acc = 0;
+        for (let i = 0; i < this.numOffsets; i++)
+            acc += Math.abs(data[pt + this.offsets[i]] - this.prev[i]);
+        return acc;
+    }
+    findUpwardsZeroCrossing(data, start, end) {
+        for (let ct = 0, i = start; i < end; i++) {
+            if (data[i] < 0)
+                ct++;
+            if (data[i] > 0 && ct > 0)
+                return i;
+        }
+        return -1;
+    }
+}
+
+class OscilloscopeElement extends mixter(HTMLElement, shadow(), attrs(class {
+    autoResize = true;
+    width = 150;
+    height = 50;
+    background = '#123';
+    color = '#1ff';
+}), props(class {
+    analyser;
+    /** @private */
+    analyserData;
+    /** @private */
+    Plot = fromElement(PlotElement);
+    /** @private */
+    plotData = new Float32Array([0]);
+    /** @private */
+    stabilizer = new Stabilizer();
+    /** @private */
+    draw;
+    /** @private */
+    loop;
+    /**
+     * Start displaying the spectrum.
+     */
+    start() {
+        this.loop?.start();
+    }
+    /**
+     * Stop displaying the spectrum.
+     */
+    stop() {
+        this.loop?.stop();
+    }
+}), state(({ $, effect, reduce }) => {
+    const { render } = jsx($);
+    let animFrame;
+    $.analyserData = reduce(({ analyser }) => new Float32Array(analyser.frequencyBinCount));
+    $.draw = reduce(({ analyser, analyserData, stabilizer }) => (function draw() {
+        animFrame = requestAnimationFrame(draw);
+        analyser.getFloatTimeDomainData(analyserData);
+        const startIndex = stabilizer.findStartingPoint(analyserData);
+        $.plotData = analyserData.slice(startIndex, startIndex + analyser.frequencyBinCount / 2);
+    }));
+    $.loop = reduce(({ draw }) => ({
+        start() {
+            animFrame = requestAnimationFrame(draw);
+        },
+        stop() {
+            cancelAnimationFrame(animFrame);
+        },
+    }));
+    effect(({ loop }) => {
+        loop.start();
+        return () => loop.stop();
+    });
+    render(({ Plot, autoResize, width, height, background, color, plotData }) => (jsx$1(Plot, { autoResize: autoResize, data: plotData, width: width, height: height, background: background, color: color })));
+})) {
+}
+
+customElements.define('x-oscilloscope', OscilloscopeElement);
+document.body.innerHTML = `
+<div id="demo" style="display:inline-flex;height:80px;">
+  <x-oscilloscope autoresize></x-oscilloscope>
+</div>
+`;
+const ctx = new AudioContext({ sampleRate: 44100, latencyHint: 'playback' });
+const analyser = ctx.createAnalyser();
+analyser.fftSize = 2048;
+analyser.smoothingTimeConstant = 0;
+analyser.maxDecibels = 0;
+analyser.minDecibels = -100;
+// @ts-ignore
+const url = new URL('alpha_molecule.ogg', import.meta.url).toString();
+fetchAudioBuffer(ctx, url).then(audioBuffer => {
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.loop = true;
+    source.connect(ctx.destination);
+    source.start(0, 83);
+    source.connect(analyser);
+    document.querySelector('x-oscilloscope').analyser = analyser;
+});
+window.onclick = () => ctx.state !== 'running' ? ctx.resume() : ctx.suspend();
+if (ctx.state !== 'running')
+    document.body.appendChild(new Text('click to start/stop'));
+// requestAnimationFrame <- for shoty
+</script>
+  </body>
+</html>
