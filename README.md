@@ -1,5 +1,5 @@
 <h1>
-x-oscilloscope <a href="https://npmjs.org/package/x-oscilloscope"><img src="https://img.shields.io/badge/npm-v1.0.0-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-115-FFF.svg?colorA=000"/></a> <a href="https://cdn.jsdelivr.net/npm/x-oscilloscope@1.0.0/dist/x-oscilloscope.min.js"><img src="https://img.shields.io/badge/brotli-4.9K-333.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
+x-oscilloscope <a href="https://npmjs.org/package/x-oscilloscope"><img src="https://img.shields.io/badge/npm-v1.0.1-F00.svg?colorA=000"/></a> <a href="src"><img src="https://img.shields.io/badge/loc-115-FFF.svg?colorA=000"/></a> <a href="https://cdn.jsdelivr.net/npm/x-oscilloscope@1.0.1/dist/x-oscilloscope.min.js"><img src="https://img.shields.io/badge/brotli-5.1K-333.svg?colorA=000"/></a> <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F0B.svg?colorA=000"/></a>
 </h1>
 
 <p></p>
