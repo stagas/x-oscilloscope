@@ -1,68 +1,69 @@
-/** @jsxImportSource mixter/jsx */
-import { attrs, mixter, props, shadow, state } from 'mixter'
-import { element, jsx } from 'mixter/jsx'
+/** @jsxImportSource sigl */
+import $ from 'sigl'
+
 import { PlotElement } from 'x-plot'
 import { Stabilizer } from './stabilizer'
 
-export class OscilloscopeElement extends mixter(
-  HTMLElement,
-  shadow(),
-  attrs(
-    class {
-      autoResize = true
-      width = 150
-      height = 50
-      background = '#123'
-      color = '#1ff'
-    }
-  ),
-  props(
-    class {
-      analyser?: AnalyserNode
-      /** @private */
-      analyserData?: Float32Array
-      /** @private */
-      Plot = element(PlotElement)
-      /** @private */
-      plotData = new Float32Array([0])
-      /** @private */
-      stabilizer = new Stabilizer()
-      /** @private */
-      draw?: () => void
-      /** @private */
-      loop?: {
-        start(): void
-        stop(): void
-      }
-      /**
-       * Start displaying the spectrum.
-       */
-      start() {
-        this.loop?.start()
-      }
-      /**
-       * Stop displaying the spectrum.
-       */
-      stop() {
-        this.loop?.stop()
-      }
-    }
-  ),
-  state<OscilloscopeElement>(({ $, effect, reduce }) => {
-    const { render } = jsx($)
+export interface OscilloscopeElement extends $.Element<OscilloscopeElement> {}
 
+@$.element()
+export class OscilloscopeElement extends HTMLElement {
+  @$.attr() autoResize = true
+  @$.attr() width = 150
+  @$.attr() height = 50
+  @$.attr() background = '#123'
+  @$.attr() color = '#1ff'
+  @$.attr() divider = 1
+
+  analyser?: AnalyserNode
+  analyserData?: Float32Array
+  Plot = $.element(PlotElement)
+  plotData = new Float32Array([0])
+  stabilizer = new Stabilizer()
+  draw?: () => void
+  loop?: {
+    start(): void
+    stop(): void
+  }
+  /**
+   * Start displaying the spectrum.
+   */
+  start() {
+    this.loop?.start()
+  }
+  /**
+   * Stop displaying the spectrum.
+   */
+  stop() {
+    this.loop?.stop()
+  }
+
+  mounted($: OscilloscopeElement['$']) {
     let animFrame: any
 
-    $.analyserData = reduce(({ analyser }) => new Float32Array(analyser.frequencyBinCount))
+    $.analyserData = $.reduce(({ analyser }) => new Float32Array(analyser.frequencyBinCount))
 
-    $.draw = reduce(({ analyser, analyserData, stabilizer }) => (function draw() {
+    let piece = 0
+    $.draw = $.reduce(({ analyser, analyserData, divider, stabilizer }) => (function draw() {
       animFrame = requestAnimationFrame(draw)
-      analyser.getFloatTimeDomainData(analyserData)
-      const startIndex = stabilizer.findStartingPoint(analyserData)
-      $.plotData = analyserData.slice(startIndex, startIndex + analyser.frequencyBinCount / 2)
+
+      if (divider === 1 || !piece)
+        analyser.getFloatTimeDomainData(analyserData)
+
+      let data
+      if (divider > 1) {
+        const half = analyserData.length / divider
+        piece = (piece + 1) % divider
+        data = analyserData.slice(piece * half, piece * half + half)
+      } else {
+        data = analyserData
+      }
+
+      const startIndex = stabilizer.findStartingPoint(data)
+      $.plotData = data.slice(startIndex, startIndex + analyser.frequencyBinCount / divider * 0.5)
     }))
 
-    $.loop = reduce(({ draw }) => ({
+    $.loop = $.reduce(({ draw }) => ({
       start() {
         animFrame = requestAnimationFrame(draw)
       },
@@ -71,12 +72,12 @@ export class OscilloscopeElement extends mixter(
       },
     }))
 
-    effect(({ loop }) => {
+    $.effect(({ loop }) => {
       loop.start()
       return () => loop.stop()
     })
 
-    render(({ Plot, autoResize, width, height, background, color, plotData }) => (
+    $.render(({ Plot, autoResize, width, height, background, color, plotData }) => (
       <Plot
         autoResize={autoResize}
         data={plotData}
@@ -86,5 +87,5 @@ export class OscilloscopeElement extends mixter(
         color={color}
       />
     ))
-  })
-) {}
+  }
+}

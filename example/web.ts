@@ -4,14 +4,14 @@ import { OscilloscopeElement } from '../src'
 customElements.define('x-oscilloscope', OscilloscopeElement)
 document.body.innerHTML = `
 <div id="demo" style="display:inline-flex;height:80px;">
-  <x-oscilloscope autoresize></x-oscilloscope>
+  <x-oscilloscope autoresize divider=4></x-oscilloscope>
 </div>
 `
 
-const ctx = new AudioContext({ sampleRate: 44100, latencyHint: 'playback' })
+const ctx = new AudioContext({ sampleRate: 44100, latencyHint: 0.08 })
 
 const analyser = ctx.createAnalyser()
-analyser.fftSize = 2048
+analyser.fftSize = 8192
 analyser.smoothingTimeConstant = 0
 analyser.maxDecibels = 0
 analyser.minDecibels = -100
