@@ -124,7 +124,7 @@
     "webaudio-tools": "^2.0.0"
   },
   "dependencies": {
-    "sigl": "^0.0.1",
+    "sigl": "^0.0.5",
     "x-plot": "^3.0.0"
   },
   "types": "./dist/types/index.d.ts"
